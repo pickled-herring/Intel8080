@@ -1,0 +1,113 @@
+# All op codes on the i8080 in binary
+# Letters: d: destination
+#          s: source
+#          r: register
+#          p: register pair
+#          l: low address (byte right after op)
+#          h: high address (byte right after l)
+# Carry bit instruction
+STC  00110111
+CMC  00111111
+
+# Single register instructions
+INC  00rrr100
+DCR  00rrr101
+CMA  00101111
+DAA  00100111
+
+# no op
+NOP  00000000
+
+# Data transfer
+MOV  01dddsss
+STAX 000p0010
+LDAX 000p1010
+
+# reg or mem to Accumulator inst
+ADD  10000rrr
+ADC  10001rrr
+SUB  10010rrr
+SBB  10011rrr
+ANA  10100rrr
+XRA  10101rrr
+ORA  10110rrr
+CMP  10111rrr
+
+# rotate acc inst
+RLC  00000111
+RRC  00001111
+RAL  00010111
+RAR  00011111
+
+# pair instructions
+PUSH 11pp0101
+POP  11pp0001
+DAD  00pp1001
+INX  00pp0011
+DCX  00pp1011
+XCHG 11101011
+XTHL 11100011
+SPHL 11111001
+
+# immediate inst
+LXI  00pp0001 l h
+MVI  00rrr110 l
+ADI  11000110 l
+ACI  11001110 l
+SUI  11010110 l
+SBI  11011110 l
+ANI  11100110 l
+XRI  11101110 l
+ORI  11110110 l
+CPI  11111110 l
+
+# direct addressing inc
+STA  00110010 l h
+LDA  00111010 l h
+SHLD 00100010 l h
+LHLD 00101010 l h
+
+# Jumping
+PCHL 11101001 l h
+JMP  11000011 l h
+JNZ  11000010 l h
+JZ   11001010 l h
+JNC  11010010 l h
+JC   11011010 l h
+JPO  11100010 l h
+JPE  11101010 l h
+JP   11110010 l h
+JM   11111010 l h
+
+# Call subroutines
+CNZ  11000100 l h
+CZ   11001100 l h
+CALL 11001101 l h
+CNC  11010100 l h
+CC   11011100 l h
+CPO  11100100 l h
+CPE  11101100 l h
+CP   11110100 l h
+CM   11111100 l h
+
+# Return from subroutine
+RNZ  11000000
+RZ   11001000
+RET  11001001
+RNC  11010000
+RC   11011000
+RPO  11100000
+RPE  11101000
+RP   11110000
+RM   11111000
+
+# Interrupts
+EI   11111011
+DI   11110011
+
+# I/O
+IN   11011011 l
+OUT  11010011 l
+
+# halt
+HLT  01110110
