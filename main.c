@@ -11,7 +11,7 @@ main (int argc, char** argv)
 
 	/* 16 bits of RAM */
 	uint8_t *mem = malloc(0xFFFF);
-	uint8_t *rom_p = mem;
+	int rom_p = 0;
 
 	init_core(core,mem);
 	dump_core(core);
@@ -29,7 +29,7 @@ main (int argc, char** argv)
 		int fsize = ftell(f);
 		fseek(f, 0L, SEEK_SET);
 
-		if(fread(rom_p,1,fsize,f) != fsize)
+		if(fread(mem+rom_p,1,fsize,f) != fsize)
 			return 2;
 		rom_p += fsize;
 
@@ -37,7 +37,7 @@ main (int argc, char** argv)
 
 	}
 
-	run_core(core, 12);
+	run_core(core, 30);
 	free(mem);
 
 	return 0;

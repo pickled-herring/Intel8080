@@ -60,7 +60,8 @@ step_core (i8080* core){
 /MAIN$/+,/END$/- d
 
 */
-	printf("%04x:", PC);
+
+	printf("\n%04x:", PC);
 	switch(MEM[PC]){
 	//MAIN
 	/* STC */
@@ -436,8 +437,8 @@ step_core (i8080* core){
 	case 195:
 		printf("JMP:");
 		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
-		PC+=2;
-		break;
+		PC=((MEM[PC+2] << 8) | MEM[PC+1]);
+		return 10;
 	/* JNZ */
 	case 194:
 		printf("JNZ:");
@@ -605,7 +606,6 @@ step_core (i8080* core){
 		printf("crashed %04x: %02x",PC,MEM[PC]);
 		dump_core(core);
 	}
-	printf("\n");
 	PC++;
 	return 1;
 }
