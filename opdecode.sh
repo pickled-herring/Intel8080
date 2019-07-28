@@ -14,14 +14,16 @@ perm(){
 IFS=''
 while read line
 do
+	op=$(echo $line | awk '{print $1}')
+	echo -e "/* $op */"
 	perm $(echo $line | awk '{print $2}')
-	printf "\tprintf(\"%s:\");\n" $(echo $line | awk '{print $1}')
+	printf "\tprintf(\"%s:\");\n" $op
 	if [[ $line =~ l$ ]]; then
-		echo -e "\tprintf(\"%02x\", buffer[pc+1]);"
-		echo -e "\topbytes = 2;"
+		echo -e "\tprintf(\"%02x\", MEM[PC+1]);"
+		echo -e "\tPC++;"
 	elif [[ $line =~ h$ ]]; then
-		echo -e "\tprintf(\"%02x:%02x\", buffer[pc+2], buffer[pc+1]);"
-		echo -e "\topbytes = 3;"
+		echo -e "\tprintf(\"%02x:%02x\", MEM[PC+2], MEM[PC+1]);"
+		echo -e "\tPC+=2;"
 	fi
 	echo -e "\tbreak;"
 done < <(cat opcodes | sed "/^#/d;/^$/d");
