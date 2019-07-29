@@ -12,11 +12,11 @@ main (int argc, char** argv)
 	/* 16 bits of RAM */
 	uint8_t *mem = malloc(0xFFFF);
 	int rom_p = 0;
+	int steps = atoi(argv[1]);
 
 	init_core(core,mem);
-	dump_core(core);
 
-	for(int i=1; i<argc; i++){
+	for(int i=2; i<argc; i++){
 
 		FILE *f = fopen(argv[i], "rb");
 
@@ -37,7 +37,8 @@ main (int argc, char** argv)
 
 	}
 
-	run_core(core, 30);
+	run_core(core, steps);
+	dump_core(core);
 	free(mem);
 
 	return 0;
