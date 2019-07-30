@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "core.h"
+/* define CPUDIAG for any programs running on CP/M */
+#define CPUDIAG
 
 void set_conditions(i8080*core, uint16_t res);
 void logic_set_conditions(i8080*core, uint16_t res);
@@ -33,26 +35,31 @@ dump_core (i8080*core)
 	DUMP('L',REG_L);
 
 	printf("\n");
-	printf("FLAGS: s:%d z:%d 0 a:%d 0 p:%d 1 c:%d\n",
+	printf("FLAGS: s%d z%d 0 a%d 0 p%d 1 c%d\n",
 			FLAG_S, FLAG_Z, FLAG_A, FLAG_P, FLAG_C);
 
 	printf("SP: %04x\n", SP);
 	printf("PC: %04x\n\n", PC);
 
 	printf("MEM:\n");
-	for(int i = -5; i < 5; i++)
-		printf("%04x: %02x\n", (SP + i), MEM[SP+i]);
+	for(int i = -10; i < 5; i++)
+	printf("%04x: %02x\n", (SP + i), MEM[SP+i]);
 }
 
 int
-run_core (i8080* core, int cycles)
+run_core (i8080* core, int cycles, int fend)
 {
 	int done = 0, step = 0;
 	while(step < cycles && !core->halt){
+		//printf("\n%04d:", step);
 		done += step_core(core);
+		if( PC > fend ){
+			printf("\n Bad memory location %04x\n", PC);
+			exit(13);
+		}
 		step++;
 	}
-	printf("\n%d\n", done);
+	printf("\n\ncycles:%d\n\n", done);
 	return done;
 }
 
@@ -71,25 +78,25 @@ parity(uint16_t x)
 int
 step_core (i8080* core){
 /*
-/MAIN$/ read !./opdecode.sh
 /MAIN$/+,/END$/- >
-/MAIN$/+,/END$/- d
+/MAIN$/+,/END$/- s/print/\/\/print/g
+/MAIN$/+,/END$/- s/\/\/print/print/g
 
 */
 
 	int done = 1;
-	printf("\n%04x:%02x:", PC, MEM[PC]);
-	switch(MEM[PC]){
 	//MAIN
+	//printf("%04x:%02x:", PC, MEM[PC]);
+	switch(MEM[PC]){
 	/* STC */
 	case 55:
-		printf("STC:");
+		//printf("STC:");
 		FLAG_C = 1;
 		done = 4;
 		break;
 	/* CMC */
 	case 63:
-		printf("CMC:");
+		//printf("CMC:");
 		FLAG_C = !FLAG_C;
 		done = 4;
 		break;
@@ -102,7 +109,7 @@ step_core (i8080* core){
 	case 20:
 	case 12:
 	case 4:
-		printf("INC:");
+		//printf("INC:");
 		done = INC(core, 1);
 		break;
 	/* DCR */
@@ -114,23 +121,23 @@ step_core (i8080* core){
 	case 21:
 	case 13:
 	case 5:
-		printf("DCR:");
+		//printf("DCR:");
 		done = INC(core, -1);
 		break;
 	/* CMA */
 	case 47:
-		printf("CMA:");
-		REG_A = !REG_A;
+		//printf("CMA:");
+		REG_A = ~REG_A;
 		done = 4;
 		break;
 	/* DAA */
 	case 39:
-		printf("DAA: not implemented");
+		//printf("DAA: not implemented");
 		done = 4;
 		break;
 	/* NOP */
 	case 0:
-		printf("NOP:");
+		//printf("NOP:");
 		done = 4;
 		break;
 	/* MOV */
@@ -197,31 +204,35 @@ step_core (i8080* core){
 	case 66:
 	case 65:
 	case 64:
-		printf("MOV:");
+		//printf("MOV:");
 		done = MOV(core);
 		break;
 	/* STAX */
 	case 18:
 	case 2:
-		printf("STAX:");
+		//printf("STAX:");
+		{
 		uint8_t *dest;
 		if((MEM[PC] >> 4) & 1)
 			dest = MEM + RP_DE;
 		else
 			dest = MEM + RP_BC;
 		*dest = REG_A;
+		}
 		done = 7;
 		break;
 	/* LDAX */
 	case 26:
 	case 10:
-		printf("LDAX:");
+		//printf("LDAX:");
+		{
 		uint8_t *src;
 		if((MEM[PC] >> 4) & 1)
 			src = MEM + RP_DE;
 		else
 			src = MEM + RP_BC;
 		REG_A = *src;
+		}
 		done = 7;
 		break;
 	/* ADD */
@@ -233,7 +244,7 @@ step_core (i8080* core){
 	case 130:
 	case 129:
 	case 128:
-		printf("ADD:");
+		//printf("ADD:");
 		done = ADD(core, 0);
 		break;
 	/* ADC */
@@ -245,7 +256,7 @@ step_core (i8080* core){
 	case 138:
 	case 137:
 	case 136:
-		printf("ADC:");
+		//printf("ADC:");
 		done = ADD(core, FLAG_C);
 		break;
 	/* SUB */
@@ -257,7 +268,7 @@ step_core (i8080* core){
 	case 146:
 	case 145:
 	case 144:
-		printf("SUB:");
+		//printf("SUB:");
 		done = SUB(core, 0);
 		break;
 	/* SBB */
@@ -269,7 +280,7 @@ step_core (i8080* core){
 	case 154:
 	case 153:
 	case 152:
-		printf("SBB:");
+		//printf("SBB:");
 		done = SUB(core, FLAG_C);
 		break;
 	/* ANA */
@@ -281,7 +292,7 @@ step_core (i8080* core){
 	case 162:
 	case 161:
 	case 160:
-		printf("ANA:");
+		//printf("ANA:");
 		done = ANA(core);
 		break;
 	/* XRA */
@@ -293,7 +304,7 @@ step_core (i8080* core){
 	case 170:
 	case 169:
 	case 168:
-		printf("XRA:");
+		//printf("XRA:");
 		done = XRA(core);
 		break;
 	/* ORA */
@@ -305,7 +316,7 @@ step_core (i8080* core){
 	case 178:
 	case 177:
 	case 176:
-		printf("ORA:");
+		//printf("ORA:");
 		done = ORA(core);
 		break;
 	/* CMP */
@@ -317,40 +328,40 @@ step_core (i8080* core){
 	case 186:
 	case 185:
 	case 184:
-		printf("CMP:");
+		//printf("CMP:");
 		done = CMP(core);
 		break;
 	/* RLC */
 	case 7:
-		printf("RLC:");
-		FLAG_C = REG_A >> 8;
+		//printf("RLC:");
+		FLAG_C = REG_A >> 7;
 		REG_A = (REG_A << 1) | FLAG_C;
 		done =4;
 		break;
 	/* RRC */
 	case 15:
-		printf("RRC:");
+		//printf("RRC:");
 		FLAG_C = REG_A & 1;
-		REG_A = (REG_A >> 1) | (FLAG_C << 8);
+		REG_A = (REG_A >> 1) | (FLAG_C << 7);
 		done =4;
 		break;
 	/* RAL */
 	case 23:
-		printf("RAL:");
+		//printf("RAL:");
 		{
 		uint8_t temp = FLAG_C;
-		FLAG_C = REG_A >> 8;
+		FLAG_C = REG_A >> 7;
 		REG_A = (REG_A << 1) | temp;
 		done =4;
 		}
 		break;
 	/* RAR */
 	case 31:
-		printf("RAR:");
+		//printf("RAR:");
 		{
 		uint8_t temp = FLAG_C;
 		FLAG_C = REG_A & 1;
-		REG_A = (REG_A >> 1) | (temp << 8);
+		REG_A = (REG_A >> 1) | (temp << 7);
 		done =4;
 		}
 		break;
@@ -359,7 +370,7 @@ step_core (i8080* core){
 	case 229:
 	case 213:
 	case 197:
-		printf("PUSH:");
+		//printf("PUSH:");
 		done = PUSH(core);
 		break;
 	/* POP */
@@ -367,7 +378,7 @@ step_core (i8080* core){
 	case 225:
 	case 209:
 	case 193:
-		printf("POP:");
+		//printf("POP:");
 		done = POP(core);
 		break;
 	/* DAD */
@@ -375,7 +386,7 @@ step_core (i8080* core){
 	case 41:
 	case 25:
 	case 9:
-		printf("DAD:");
+		//printf("DAD:");
 		done = DAD(core);
 		break;
 	/* INX */
@@ -383,7 +394,7 @@ step_core (i8080* core){
 	case 35:
 	case 19:
 	case 3:
-		printf("INX:");
+		//printf("INX:");
 		done = INX(core, 1);
 		break;
 	/* DCX */
@@ -391,12 +402,12 @@ step_core (i8080* core){
 	case 43:
 	case 27:
 	case 11:
-		printf("DCX:");
+		//printf("DCX:");
 		done = INX(core, -1);
 		break;
 	/* XCHG */
 	case 235:
-		printf("XCHG:");
+		//printf("XCHG:");
 		{
 		uint8_t temp = REG_D;
 		REG_D = REG_H;
@@ -409,7 +420,7 @@ step_core (i8080* core){
 		break;
 	/* XTHL */
 	case 227:
-		printf("XTHL:");
+		//printf("XTHL:");
 		{
 		uint8_t temp = MEM[SP];
 		MEM[SP] = REG_L;
@@ -422,7 +433,7 @@ step_core (i8080* core){
 		break;
 	/* SPHL */
 	case 249:
-		printf("SPHL:");
+		//printf("SPHL:");
 		SP = RP_HL;
 		done = 16;
 		break;
@@ -431,8 +442,8 @@ step_core (i8080* core){
 	case 33:
 	case 17:
 	case 1:
-		printf("LXI:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("LXI:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		done = LXI(core, MEM[PC+1], MEM[PC+2]);
 		PC+=2;
 		break;
@@ -445,16 +456,15 @@ step_core (i8080* core){
 	case 22:
 	case 14:
 	case 6:
-		printf("MVI:");
-		printf("%02x", MEM[PC+1]);
-		*REG((MEM[PC] >> 3) & 7) = MEM[PC+1];
+		//printf("MVI:");
+		//printf("%02x", MEM[PC+1]);
+		done = MVI(core);
 		PC++;
-		done = 7;
 		break;
 	/* ADI */
 	case 198:
-		printf("ADI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("ADI:");
+		//printf("%02x", MEM[PC+1]);
 		set_conditions(core,(uint16_t)(REG_A + MEM[PC+1]));
 		REG_A += MEM[PC+1];
 		PC++;
@@ -462,35 +472,49 @@ step_core (i8080* core){
 		break;
 	/* ACI */
 	case 206:
-		printf("ACI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("ACI:");
+		//printf("%02x", MEM[PC+1]);
+		{
+		uint8_t temp = FLAG_C;
 		set_conditions(core,(uint16_t)(REG_A + MEM[PC+1] + FLAG_C));
-		REG_A = REG_A + MEM[PC+1] + FLAG_C;
+		REG_A += (MEM[PC+1] + temp);
+		}
 		PC++;
 		done = 7;
 		break;
 	/* SUI */
 	case 214:
-		printf("SUI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("SUI:");
+		//printf("%02x", MEM[PC+1]);
 		set_conditions(core,(uint16_t)(REG_A - MEM[PC+1]));
+		if(REG_A < MEM[PC+1])
+			FLAG_C = 1;
+		else
+			FLAG_C = 0;
 		REG_A -= MEM[PC+1];
 		PC++;
 		done = 7;
 		break;
 	/* SBI */
 	case 222:
-		printf("SBI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("SBI:");
+		//printf("%02x", MEM[PC+1]);
+		{
+		uint8_t temp = FLAG_C;
 		set_conditions(core,(uint16_t)(REG_A - MEM[PC+1] - FLAG_C));
-		REG_A -= (MEM[PC+1]+FLAG_C);
+		if(MEM[PC+1] > REG_A)
+			FLAG_C = 1;
+		else
+			FLAG_C = 0;
+		REG_A -= (MEM[PC+1]+temp);
+		}
 		PC++;
 		done = 7;
 		break;
 	/* ANI */
 	case 230:
-		printf("ANI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("ANI:");
+		//printf("%02x", MEM[PC+1]);
 		logic_set_conditions(core,(uint16_t)(REG_A & MEM[PC+1]));
 		REG_A &= MEM[PC+1];
 		PC++;
@@ -498,8 +522,8 @@ step_core (i8080* core){
 		break;
 	/* XRI */
 	case 238:
-		printf("XRI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("XRI:");
+		//printf("%02x", MEM[PC+1]);
 		logic_set_conditions(core,(uint16_t)(REG_A ^ MEM[PC+1]));
 		REG_A ^= MEM[PC+1];
 		PC++;
@@ -507,8 +531,8 @@ step_core (i8080* core){
 		break;
 	/* ORI */
 	case 246:
-		printf("ORI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("ORI:");
+		//printf("%02x", MEM[PC+1]);
 		logic_set_conditions(core,(uint16_t)(REG_A | MEM[PC+1]));
 		REG_A |= MEM[PC+1];
 		PC++;
@@ -516,32 +540,36 @@ step_core (i8080* core){
 		break;
 	/* CPI */
 	case 254:
-		printf("CPI:");
-		printf("%02x", MEM[PC+1]);
+		//printf("CPI:");
+		//printf("%02x", MEM[PC+1]);
 		set_conditions(core,(uint16_t)(REG_A - MEM[PC+1]));
+		if(REG_A < MEM[PC+1])
+			FLAG_C = 1;
+		else
+			FLAG_C = 0;
 		PC++;
 		done=7;
 		break;
 	/* STA */
 	case 50:
-		printf("STA:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("STA:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		MEM[(MEM[PC+2] << 8) | MEM[PC+1]] = REG_A;
 		PC+=2;
 		done = 13;
 		break;
 	/* LDA */
 	case 58:
-		printf("LDA:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("LDA:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		REG_A = MEM[(MEM[PC+2] << 8) | MEM[PC+1]];
 		PC+=2;
 		done = 13;
 		break;
 	/* SHLD */
 	case 34:
-		printf("SHLD:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("SHLD:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		MEM[(MEM[PC+2] << 8) | MEM[PC+1]] = REG_L;
 		MEM[((MEM[PC+2] << 8) | MEM[PC+1]) + 1] = REG_H;
 		PC+=2;
@@ -549,124 +577,151 @@ step_core (i8080* core){
 		break;
 	/* LHLD */
 	case 42:
-		printf("LHLD:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("LHLD:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		REG_L = MEM[(MEM[PC+2] << 8) | MEM[PC+1]];
 		REG_H = MEM[((MEM[PC+2] << 8) | MEM[PC+1]) + 1];
 		PC+=2;
 		break;
 	/* PCHL */
 	case 233:
-		printf("PCHL:");
+		//printf("PCHL:");
 		PC = RP_HL;
 		return 5;
 		break;
 	/* JMP */
 	case 195:
-		printf("JMP:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JMP:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+#ifdef CPUDIAG
+	if(!MEM[PC+2] && !MEM[PC+1]){
+		core->halt = 1;
+		return 10;
+	}
+#endif
 		PC=((MEM[PC+2] << 8) | MEM[PC+1]);
 		return 10;
 	/* JNZ */
 	case 194:
-		printf("JNZ:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JNZ:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, !FLAG_Z);
 	/* JZ */
 	case 202:
-		printf("JZ:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JZ:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, FLAG_Z);
 	/* JNC */
 	case 210:
-		printf("JNC:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JNC:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, !FLAG_C);
 	/* JC */
 	case 218:
-		printf("JC:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JC:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, FLAG_C);
 	/* JPO */
 	case 226:
-		printf("JPO:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JPO:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, !FLAG_P);
 	/* JPE */
 	case 234:
-		printf("JPE:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JPE:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, FLAG_P);
 	/* JP */
 	case 242:
-		printf("JP:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JP:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, !FLAG_S);
 	/* JM */
 	case 250:
-		printf("JM:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("JM:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return JMP(core, FLAG_S);
 	/* CNZ */
 	case 196:
-		printf("CNZ:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CNZ:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, !FLAG_Z);
 	/* CZ */
 	case 204:
-		printf("CZ:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CZ:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, FLAG_Z);
 	/* CALL */
 	case 205:
-		printf("CALL:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CALL:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		/* Here's CALL MSG for cpudiag.bin*/
+#ifdef CPUDIAG
+	if(((MEM[PC+2] << 8 ) | MEM[PC+1]) == 5){
+		if(REG_C == 9){
+			char*str = (char*)(MEM+RP_DE+3);
+			while(*str != '$')
+				printf("%c",*str++);
+			printf("\n");
+			PC+=3;
+			return 17;
+		} else if (REG_C == 2) {
+			printf("%c", *(char*)(MEM+RP_DE+3));
+			PC+=3;
+			return 17;
+		}
+	} else if(((MEM[PC+2] << 8 ) | MEM[PC+1]) == 0){
+		exit(12);
+	} else
+#endif
+	{
 		SP--;
 		MEM[SP--] = (uint8_t)((PC+3) >> 8);
 		MEM[SP] = (uint8_t)((PC+3) & 0xff);
 		PC=((MEM[PC+2] << 8) | MEM[PC+1]);
 		return 17;;
+	}
 	/* CNC */
 	case 212:
-		printf("CNC:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CNC:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, !FLAG_C);
 	/* CC */
 	case 220:
-		printf("CC:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CC:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, FLAG_C);
 	/* CPO */
 	case 228:
-		printf("CPO:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CPO:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, !FLAG_P);
 	/* CPE */
 	case 236:
-		printf("CPE:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CPE:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, FLAG_P);
 	/* CP */
 	case 244:
-		printf("CP:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CP:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, !FLAG_S);
 	/* CM */
 	case 252:
-		printf("CM:");
-		printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
+		//printf("CM:");
+		//printf("%02x:%02x", MEM[PC+2], MEM[PC+1]);
 		return CALL(core, FLAG_S);
 	/* RNZ */
 	case 192:
-		printf("RNZ:");
+		//printf("RNZ:");
 		return RET(core, !FLAG_Z);
 	/* RZ */
 	case 200:
-		printf("RZ:");
+		//printf("RZ:");
 		return RET(core, FLAG_Z);
 	/* RET */
 	case 201:
-		printf("RET:");
+		//printf("RET:");
 		PC = MEM[SP];
 		SP++;
 		PC |= (MEM[SP] << 8);
@@ -674,53 +729,53 @@ step_core (i8080* core){
 		return 10;
 	/* RNC */
 	case 208:
-		printf("RNC:");
+		//printf("RNC:");
 		return RET(core, !FLAG_C);
 	/* RC */
 	case 216:
-		printf("RC:");
+		//printf("RC:");
 		return RET(core, FLAG_C);
 	/* RPO */
 	case 224:
-		printf("RPO:");
+		//printf("RPO:");
 		return RET(core, !FLAG_P);
 	/* RPE */
 	case 232:
-		printf("RPE:");
+		//printf("RPE:");
 		return RET(core, FLAG_P);
 	/* RP */
 	case 240:
-		printf("RP:");
+		//printf("RP:");
 		return RET(core, !FLAG_S);
 	/* RM */
 	case 248:
-		printf("RM:");
+		//printf("RM:");
 		return RET(core, FLAG_S);
 	/* EI */
 	case 251:
-		printf("EI:");
+		//printf("EI:");
 		core->ie = 1;
 		break;
 	/* DI */
 	case 243:
-		printf("DI:");
+		//printf("DI:");
 		core->ie = 0;
 		break;
 	/* IN */
 	case 219:
-		printf("IN:");
-		printf("%02x", MEM[PC+1]);
+		//printf("IN:");
+		//printf("%02x", MEM[PC+1]);
 		PC++;
 		break;
 	/* OUT */
 	case 211:
-		printf("OUT:");
-		printf("%02x", MEM[PC+1]);
+		//printf("OUT:");
+		//printf("%02x", MEM[PC+1]);
 		PC++;
 		break;
 	/* HLT */
 	case 118:
-		printf("HLT:");
+		//printf("HLT:");
 		core->halt = 1;
 		break;
 	//END
@@ -730,6 +785,16 @@ step_core (i8080* core){
 	}
 	PC++;
 	return done;
+}
+
+void
+update_conditions(i8080*core)
+{
+	FLAG_C = core->psw & 1;
+	FLAG_P = (core->psw>>2) & 1;
+	FLAG_A = (core->psw>>4) & 1;
+	FLAG_Z = (core->psw>>6) & 1;
+	FLAG_S = (core->psw>>7) & 1;
 }
 
 void
@@ -769,6 +834,24 @@ INC (i8080*core, int blit)
 	uint16_t res = *addr + blit;
 	*addr = res;
 	set_conditions(core, res);
+	return done;
+}
+
+int
+MVI (i8080*core)
+{
+	uint8_t reg = ((MEM[PC] >> 3) & 7);
+	uint8_t *addr;
+	int done=7;
+
+	if(reg == 0b110){
+		addr = MEM + RP_HL;
+		done = 10;
+	} else {
+		addr = REG(reg);
+	}
+
+	*addr = MEM[PC+1];
 	return done;
 }
 
@@ -941,10 +1024,11 @@ POP (i8080*core)
 		SP++;
 		break;
 	case 0b11:
-		REG_A = MEM[SP];
-		SP++;
 		core->psw = MEM[SP];
 		SP++;
+		REG_A = MEM[SP];
+		SP++;
+		update_conditions(core);
 		break;
 	};
 	return 10;
@@ -953,7 +1037,7 @@ POP (i8080*core)
 int
 DAD (i8080*core)
 {
-	uint16_t res;
+	uint32_t res;
 	switch((MEM[PC] >> 4) & 3){
 	case 0b00:
 		res = RP_BC + RP_HL;
@@ -968,6 +1052,8 @@ DAD (i8080*core)
 		res = SP + RP_HL;
 		break;
 	}
+	if(res > 0xff);
+		FLAG_C = 1;
 	REG_L = res & 0xff;
 	REG_H = (res >> 8) & 0xff;
 	return 10;
@@ -1038,8 +1124,9 @@ int
 CALL (i8080*core, uint8_t cond)
 {
 	if(cond){
+		SP--;
 		MEM[SP--] = (uint8_t)((PC+3) >> 8);
-		MEM[SP--] = (uint8_t)((PC+3) & 0xff);
+		MEM[SP] = (uint8_t)((PC+3) & 0xff);
 		PC=((MEM[PC+2] << 8) | MEM[PC+1]);
 		return 17;
 	}
@@ -1057,6 +1144,6 @@ RET (i8080*core, uint8_t cond)
 		SP++;
 		return 11;
 	}
-	PC += 3;
+	PC++;
 	return 5;
 }

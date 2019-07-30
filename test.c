@@ -4,6 +4,7 @@
 
 #include "core.h"
 
+
 int
 main (int argc, char** argv)
 {
@@ -11,7 +12,8 @@ main (int argc, char** argv)
 
 	/* 16 kb of RAM */
 	uint8_t *mem = malloc(0xFFFF);
-	int rom_p = 0, rom_size=0, steps = atoi(argv[1]);
+	int rom_p = 0x100, fsize=0;
+	int steps = atoi(argv[1]);
 
 	init_core(core,mem);
 
@@ -21,26 +23,31 @@ main (int argc, char** argv)
 
 		if(f==NULL){
 			printf("unable to read %s\n", argv[i]);
-			return 1;
+			return 145;
 		}
 
 		fseek(f, 0L, SEEK_END);
-		int fsize = ftell(f);
+		fsize += ftell(f);
 		fseek(f, 0L, SEEK_SET);
 
 		if(fread(mem+rom_p,1,fsize,f) != fsize)
 			return 2;
 		rom_p += fsize;
-		rom_size += fsize;
 
 		fclose(f);
 
 	}
 
-	core->pc = 0x100;
-	run_core(core, steps, rom_size);
+	// jump to 0x100
+	PC= 0x100;
+	//sp = 0x7ad
+	MEM[368] = 0x7;
+	//skip DAA test
+	MEM[0x59c] = 0xc3;
+	MEM[0x59d] = 0xc2;
+	MEM[0x59e] = 0x05;
+	run_core(core, steps, rom_p + fsize);
 	dump_core(core);
-	free(mem);
-
+	free(mem); 
 	return 0;
 }

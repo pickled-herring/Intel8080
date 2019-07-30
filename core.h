@@ -35,7 +35,7 @@
 #define REG(x) ((uint8_t*)core + (x))
 #define RP(x) ((uint16_t*)core + (x))
 
- typedef struct condition {
+typedef struct condition {
 	uint8_t z:1; /* zero flag */
 	uint8_t s:1; /* sign bit */
 	uint8_t p:1; /* parity */
@@ -70,11 +70,12 @@ typedef struct i8080 {
 void init_core(i8080* core, uint8_t* mem);
 void dump_core(i8080* core);
 int step_core(i8080* core);
-int run_core(i8080* core, int cycles);
+int run_core(i8080* core, int cycles, int fend);
 uint8_t parity(uint16_t x);
 
 int INC(i8080*core, int blit);
 int INX(i8080*core, int blit);
+int MVI(i8080*core);
 int ADD(i8080*core, uint8_t blit);
 int SUB(i8080*core, uint8_t blit);
 int ANA(i8080*core);
