@@ -9,7 +9,7 @@ main (int argc, char** argv)
 {
 	i8080* core = (i8080* )malloc(sizeof(i8080));
 
-	/* 16 bits of RAM */
+	/* 16 kb of RAM */
 	uint8_t *mem = malloc(0xFFFF);
 	int rom_p = 0;
 	int steps = atoi(argv[1]);
